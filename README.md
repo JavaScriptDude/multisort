@@ -1,4 +1,4 @@
-## `multisort` - NoneType Safe Multi Column Sorting
+## `multisort` - NoneType Safe Multi Column Sorting For Python
 
 Simplified multi-column sorting of lists of tuples, dicts, lists or objects that are NoneType safe.
 
@@ -69,6 +69,21 @@ rows_sorted = msorted(rows_dict, [
 ])
 
 ```
+`msorted` parameters:
+option|dtype|description
+---|---|---
+`key`|int or str|Key to access data. int for tuple or list
+`spec`|str, int, list|Sort specification. Can be as simple as a column key / index
+`reverse`|bool|Reverse order of final sort (defalt = False)
+
+`msorted` `spec` options:
+option|dtype|description
+---|---|---
+reverse|bool|Reverse sort of column
+clean|func|Function / lambda to clean the value
+none_first|bool|If True, None will be at top of sort. Default is False (bottom)
+
+
 
 ### `sorted` with `reversor`
 Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade_:
