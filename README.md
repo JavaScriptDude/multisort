@@ -12,27 +12,29 @@ python3 -m pip install multisort
 None
 
 ### Performance
-Average over 10 iterations with 500 rows.
+Average over 10 iterations with 1000 rows.
 Test | Secs
 ---|---
-cmp_func|0.0054
-pandas|0.0061
-reversor|0.0149
-msorted|0.0179
+superfast|0.0005
+multisort|0.0035
+pandas|0.0079
+cmp_func|0.0138
+reversor|0.037
 
-As you can see, if the `cmp_func` is by far the fastest methodology as long as the number of cells in the table are 500 rows for 5 columns. However for larger data sets, `pandas` is the performance winner and scales extremely well. In such large dataset cases, where performance is key, `pandas` should be the first choice.
+Hands down the fastest is the `superfast` methdology shown below. You do not need this library to accomplish this as its just core python.
 
-The surprising thing from testing is that `cmp_func` far outperforms `reversor` which which is the only other methodology for multi-columnar sorting that can handle `NoneType` values.
+`multisort` from this library gives reasonable performance for large data sets; eg. its better than pandas up to about 5,500 records. It is also much simpler to read and write, and it has error handling that does its best to give useful error messages.
 
 ### Note on `NoneType` and sorting
-If your data may contain None, it would be wise to ensure your sort algorithm is tuned to handle them. This is because sorted uses `<` comparisons; which is not supported by `NoneType`. For example, the following error will result: `TypeError: '>' not supported between instances of 'NoneType' and 'str'`.
+If your data may contain None, it would be wise to ensure your sort algorithm is tuned to handle them. This is because sorted uses `<` comparisons; which is not supported by `NoneType`. For example, the following error will result: `TypeError: '>' not supported between instances of 'NoneType' and 'str'`. All examples given on this page are tuned to handle `None` values.
 
 ### Methodologies
 Method|Descr|Notes
 ---|---|---
-cmp_func|Multi column sorting in the model `java.util.Comparator`|Fastest for small to medium size data
-reversor|Enable multi column sorting with column specific reverse sorting|Medium speed. [Source](https://stackoverflow.com/a/56842689/286807)
-msorted|Simple one-liner designed after `multisort` [example from python docs](https://docs.python.org/3/howto/sorting.html#sort-stability-and-complex-sorts)|Slowest of the bunch but not by much
+multisort|Simple one-liner designed after `multisort` [example from python docs](https://docs.python.org/3/howto/sorting.html#sort-stability-and-complex-sorts)|Second fastest of the bunch but most configurable and easy to read.
+cmp_func|Multi column sorting in the model `java.util.Comparator`|Reasonable speed|Enable multi column sorting with column specific reverse sorting|Medium speed. [Source](https://stackoverflow.com/a/56842689/286807)
+superfast|NoneType safe sample implementation of multi column sorting as mentioned in [example from python docs](https://docs.python.org/3/howto/sorting.html#sort-stability-and-complex-sorts)|Fastest by orders of magnitude but a bit more complex to write.
+
 
 
 
@@ -49,39 +51,39 @@ rows_dict = [
 ]
 ```
 
-### `msorted`
+### `multisort`
 Sort rows_dict by _grade_, descending, then _attend_, ascending and put None first in results:
 ```
-from multisort import msorted
-rows_sorted = msorted(rows_dict, [
-         ('grade', {'reverse': False, 'none_first': True})
+from multisort import multisort
+rows_sorted = multisort(rows_dict, [
+         ('grade', {'reverse': False})
         ,'attend'
 ])
 
 ```
-
 Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade_:
 ```
-from multisort import msorted
-rows_sorted = msorted(rows_dict, [
-         ('grade', {'reverse': False, 'clean': lambda s:None if s is None else s.upper()})
+from multisort import multisort
+rows_sorted = multisort(rows_dict, [
+         ('grade', {'reverse': False, 'clean': lambda s: None if s is None else s.upper()})
         ,'attend'
 ])
 
 ```
-`msorted` parameters:
+`multisort` parameters:
 option|dtype|description
 ---|---|---
 `key`|int or str|Key to access data. int for tuple or list
 `spec`|str, int, list|Sort specification. Can be as simple as a column key / index
 `reverse`|bool|Reverse order of final sort (defalt = False)
 
-`msorted` `spec` options:
+`multisort` `spec` options:
 option|dtype|description
 ---|---|---
 reverse|bool|Reverse sort of column
-clean|func|Function / lambda to clean the value
-none_first|bool|If True, None will be at top of sort. Default is False (bottom)
+clean|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
+required|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
+default|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
 
 
 
@@ -134,7 +136,7 @@ rows_obj = [
 ]
 ```
 
-### `msorted`
+### `multisort`
 (Same syntax as with 'dict' example)
 
 
@@ -177,11 +179,11 @@ rows_tuple = [
 (COL_IDX, COL_NAME, COL_GRADE, COL_ATTEND) = range(0,4)
 ```
 
-### `msorted`
+### `multisort`
 Sort rows_tuple by _grade_, descending, then _attend_, ascending and put None first in results:
 ```
-from multisort import msorted
-rows_sorted = msorted(rows_tuple, [
+from multisort import multisort
+rows_sorted = multisort(rows_tuple, [
          (COL_GRADE, {'reverse': False, 'none_first': True})
         ,COL_ATTEND
 ])
@@ -218,6 +220,6 @@ rows_sorted = sorted(rows_tuple, key=cmp_func(cmp_student), reverse=True)
 ### Tests / Samples
 Name|Descr|Other
 ---|---|---
-tests/test_msorted.py|msorted unit tests|- 
+tests/test_multisort.py|multisort unit tests|- 
 tests/performance_tests.py|Tunable performance tests using asyncio | requires pandas
 tests/hand_test.py|Hand testing|-

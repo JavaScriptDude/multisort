@@ -11,7 +11,7 @@ from functools import cmp_to_key
 cmp_func = cmp_to_key
 
 
-# .: msorted :.
+# .: multisort :.
 # spec is a list one of the following
 #    <key>
 #    (<key>,)
@@ -21,70 +21,102 @@ cmp_func = cmp_to_key
 #  <opts> dict. Options:
 #       reverse: opt - reversed sort (defaults to False)
 #       clean: opt - callback to clean / alter data in 'field'
-#       none_first: opt - If True, None will be at top of sort. Default is False (bottom)
-class Comparator:
-    @classmethod
-    def new(cls, *args):
-        if len(args) == 1 and isinstance(args[0], (int,str)):
-            _c = Comparator(spec=args[0])
+def multisort(rows, spec, reverse:bool=False):
+    key=clean=rows_sorted=default=None
+    col_reverse=False
+    required=True
+    for s_c in reversed([spec] if isinstance(spec, (int, str)) else spec):
+        if isinstance(s_c, (int, str)):
+            key = s_c
         else:
-            _c = Comparator(spec=args)
-        return cmp_to_key(_c._compare_a_b)
+            if len(s_c) == 1:
+                key = s_c[0]
+            elif len(s_c) == 2:
+                key = s_c[0]
+                s_opts = s_c[1]
+                assert not s_opts is None and isinstance(s_opts, dict), f"Invalid Spec. Second value must be a dict. Got {getClassName(s_opts)}"
+                col_reverse = s_opts.get('reverse', False)
+                clean = s_opts.get('clean', None)
+                default = s_opts.get('default', None)
+                required = s_opts.get('required', True)
 
-    def __init__(self, spec): 
-        if isinstance(spec, (int, str)):
-            self.spec = ( (spec, False, None, False), )
-        else:
-            a=[]
-            for s_c in spec:
-                if isinstance(s_c, (int, str)):
-                    a.append((s_c, None, None, False))
-                else:
-                    assert isinstance(s_c, tuple) and len(s_c) in (1,2),\
-                        f"Invalid spec. Must have 1 or 2 params per record. Got: {s_c}"
-                    if len(s_c) == 1:
-                        a.append((s_c[0], None, None, False))
-                    elif len(s_c) == 2:
-                        s_opts = s_c[1]
-                        assert not s_opts is None and isinstance(s_opts, dict), f"Invalid Spec. Second value must be a dict. Got {getClassName(s_opts)}"
-                        a.append((s_c[0], s_opts.get('reverse', False), s_opts.get('clean', None), s_opts.get('none_first', False)))
-
-            self.spec = a
-
-    def _compare_a_b(self, a, b):
-        if a is None: return 1
-        if b is None: return -1
-        for k, desc, clean, none_first in self.spec:
+        def _sort_column(row): # Throws MSIndexError, MSKeyError
+            ex1=None
             try:
                 try:
-                    va = a[k]; vb = b[k]
+                    v = row[key] 
                 except Exception as ex:
-                    va = getattr(a, k); vb = getattr(b, k)
+                    ex1 = ex
+                    v = getattr(row, key)
+            except Exception as ex2:
+                if isinstance(row, (list, tuple)): # failfast for tuple / list
+                    raise MSIndexError(ex1.args[0], row, ex1)
 
-            except Exception as ex:
-                raise KeyError(f"Key {k} is not available in object(s) given a: {a.__class__.__name__}, b: {a.__class__.__name__}")
+                elif required:
+                    raise MSKeyError(ex2.args[0], row, ex2)
 
-            if clean:
-                va = clean(va)
-                vb = clean(vb)
-
-            if va != vb:
-                if va is None: return -1 if none_first else 1
-                if vb is None: return 1 if none_first else -1
-                if desc:
-                    return -1 if va > vb else 1
                 else:
-                    return 1 if va > vb else -1
+                    if default is None: 
+                        v = None
+                    else:
+                        v = default
 
-        return 0
+            if default:
+                if v is None: return default
+                return clean(v) if clean else v
+            else:
+                if v is None: return True, None
+                if clean: return False, clean(v)
+                return False, v
+
+        try:
+            if rows_sorted is None:
+                rows_sorted = sorted(rows, key=_sort_column, reverse=col_reverse)
+            else:
+                rows_sorted.sort(key=_sort_column, reverse=col_reverse)
+
+                
+        except Exception as ex:
+            msg=None
+            row=None
+            key_is_int=isinstance(key, int)
+
+            if isinstance(ex, MultiSortBaseExc):
+                row = ex.row
+                if isinstance(ex, MSIndexError):
+                    msg = f"Invalid index for {row.__class__.__name__} row of length {len(row)}. Row: {row}"
+                else: # MSKeyError
+                    msg = f"Invalid key/property for row of type {row.__class__.__name__}. Row: {row}"
+            else:
+                msg = ex.args[0]
+            
+            raise MultiSortError(f"""Sort failed on key {"int" if key_is_int else "str '"}{key}{'' if key_is_int else "' "}. {msg}""", row, ex)
 
 
-def msorted(rows, spec, reverse:bool=False):
-    if isinstance(spec, (int, str)):
-        _c = Comparator.new(spec)
-    else:
-        _c = Comparator.new(*spec)
-    return sorted(rows, key=_c, reverse=reverse)
+    return reversed(rows_sorted) if reverse else rows_sorted
+        
+
+class MultiSortBaseExc(Exception):
+    def __init__(self, msg, row, cause):
+        self.message = msg
+        self.row = row
+        self.cause = cause
+        
+class MSIndexError(MultiSortBaseExc):
+    def __init__(self, msg, row, cause):
+        super(MSIndexError, self).__init__(msg, row, cause)
+
+class MSKeyError(MultiSortBaseExc):
+    def __init__(self, msg, row, cause):
+        super(MSKeyError, self).__init__(msg, row, cause)
+
+class MultiSortError(MultiSortBaseExc):
+    def __init__(self, msg, row, cause):
+        super(MultiSortError, self).__init__(msg, row, cause)
+    def __str__(self):
+        return self.message
+    def __repr__(self):
+        return f"<MultiSortError> {self.__str__()}"
 
 # For use in the multi column sorted syntax to sort by 'grade' and then 'attend' descending
 # dict example:

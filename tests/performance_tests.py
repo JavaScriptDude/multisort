@@ -1,20 +1,21 @@
 import asyncio
 import pandas
 from random import randint
-from multisort import msorted, cmp_func, reversor
+from operator import itemgetter
+from multisort import multisort, cmp_func, reversor
 import test_util as util
 pc = util.pc
 
 students = [
-     {'idx': 0, 'name': 'joh', 'grade': 'C', 'attend': 100}
+     {'idx': 0, 'name': 'joh', 'grade': None, 'attend': 100}
     ,{'idx': 1, 'name': 'jan', 'grade': 'a', 'attend': 80}
     ,{'idx': 2, 'name': 'dav', 'grade': 'B', 'attend': 85}
     ,{'idx': 3, 'name': 'bob' , 'grade': 'C', 'attend': 85}
     ,{'idx': 4, 'name': 'jim' , 'grade': 'F', 'attend': 55}
     ,{'idx': 5, 'name': 'joe' , 'grade': None, 'attend': 55}
 ]
-ITERATIONS = 10
-EXTRA_ROW = 500
+ITERATIONS = 5
+EXTRA_ROW = 1000
 
 def main():
     results = asyncio.get_event_loop().run_until_complete(run_tests())
@@ -23,7 +24,7 @@ def main():
         if isinstance(result, Exception): raise result
         rrows.append(result)
 
-    rrows = msorted(rrows, 1)
+    rrows = multisort(rrows, 1)
     table = util.quickTT(['test', 's/iter'])
     for rrow in rrows: table.add_row([rrow[0], f"{(rrow[1] / ITERATIONS):.7f}"])
     print(f"\nSummary for {ITERATIONS} iteration{'s' if ITERATIONS > 1 else ''} with {len(students)} rows:\n{table.draw()}\n")
@@ -39,10 +40,12 @@ async def run_tests():
 
     coroutines = [
         run_cmp_func(students[:]),
-        run_msorted(students[:]),
+        run_multisort(students[:]),
+        run_multisort_noclean(students[:]),
         run_reversor(students[:]),
-        run_reversor_func(students[:]),
         run_pandas(students[:]),
+        superfast(students[:]),
+        superfast_clean(students[:]),
     ]
     res = await asyncio.gather(*coroutines, return_exceptions=True)
 
@@ -69,14 +72,25 @@ async def run_cmp_func(rows):
 
 
 
-async def run_msorted(rows):
+async def run_multisort(rows):
     sw = util.StopWatch()
     for i in range(0,ITERATIONS):
-        rows_sorted = msorted(rows, spec=(
+        rows_sorted = multisort(rows, spec=(
                 ('grade', {'reverse': True, 'clean': lambda v: None if v is None else v.lower()})
                ,('attend', {'reverse': True})
         ), reverse=True)
-    return ('msorted', sw.elapsed(prec=7))
+    return ('multisort w/ clean', sw.elapsed(prec=7))
+
+
+async def run_multisort_noclean(rows):
+    sw = util.StopWatch()
+    for i in range(0,ITERATIONS):
+        rows_sorted = multisort(rows, spec=(
+                ('grade', {'reverse': True})
+               ,('attend', {'reverse': True})
+        ), reverse=True)
+    return ('multisort noclean', sw.elapsed(prec=7))
+
 
 async def run_reversor(rows):
     sw = util.StopWatch()
@@ -87,16 +101,6 @@ async def run_reversor(rows):
         ), reverse=True)
     return ('reversor', sw.elapsed(prec=7))
 
-async def run_reversor_func(rows):
-    sw = util.StopWatch()
-    def _student_sort(o):
-        return ( reversor(None if o['grade'] is None else o['grade'].lower())
-                ,reversor(o['attend'])
-        )
-    for i in range(0,ITERATIONS):
-        rows_sorted = sorted(rows, key=_student_sort, reverse=True)
-
-    return ('reversor func', sw.elapsed(prec=7))
 
 async def run_pandas(rows):
     sw = util.StopWatch()
@@ -107,6 +111,35 @@ async def run_pandas(rows):
         # d_rows_sorted = list(df.T.to_dict().values())
 
     return ('pandas', sw.elapsed(prec=7))
+
+
+async def superfast(students):
+    sw = util.StopWatch()
+    def key_grade(student):
+        grade = student['grade']
+        return grade is None, grade
+    def key_attend(student):
+        return student['attend']
+    students_sorted = sorted(students, key=key_attend)
+    students_sorted.sort(key=key_grade, reverse=True)
+
+    return ('superfast', sw.elapsed(prec=7))
+
+
+async def superfast_clean(students):
+    sw = util.StopWatch()
+    def key_grade(student):
+        grade = student['grade']
+        if grade is None:
+            return True, None
+        else:
+            return False, grade.upper()
+    def key_attend(student):
+        return student['attend']
+    students_sorted = sorted(students, key=key_attend)
+    students_sorted.sort(key=key_grade, reverse=True)
+
+    return ('superfast w/ clean', sw.elapsed(prec=7))
 
 
 if __name__ == '__main__':
