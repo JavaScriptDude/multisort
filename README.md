@@ -56,8 +56,8 @@ Sort rows_dict by _grade_, descending, then _attend_, ascending and put None fir
 ```
 from multisort import multisort
 rows_sorted = multisort(rows_dict, [
-         ('grade', {'reverse': False})
-        ,'attend'
+        ('grade', reverse=False),
+        ('attend')
 ])
 
 ```
@@ -65,36 +65,26 @@ Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade
 ```
 from multisort import multisort
 rows_sorted = multisort(rows_dict, [
-         ('grade', {'reverse': False, 'clean': lambda s: None if s is None else s.upper()})
-        ,'attend'
+        mscol('grade', 'reverse'=False, clean=lambda s: None if s is None else s.upper()),
+        ('attend')
 ])
 
 ```
 `multisort` parameters:
 option|dtype|description
 ---|---|---
-`key`|int or str|Key to access data. int for tuple or list
-`spec`|str, int, list|Sort specification. Can be as simple as a column key / index
+`rows`|int or str|Key to access data. int for tuple or list
+`spec`|str, int, list|Sort specification. Can be as simple as a column key / index or `mscol`
 `reverse`|bool|Reverse order of final sort (defalt = False)
 
-`multisort` `spec` options:
+`multisort` spec options:
 option|dtype|description
 ---|---|---
-reverse|bool|Reverse sort of column
-clean|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
-required|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
-default|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
-
-
-
-### `sorted` with `reversor`
-Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade_:
-```
-rows_sorted = sorted(rows_dict, key=lambda o: (
-             reversor(None if o['grade'] is None else o['grade'].upper())
-            ,o['attend'])
-))
-```
+`key`|int or str|Key to access data. int for tuple or list
+`reverse`|bool|Reverse sort of column
+`clean`|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
+`required`|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
+`default`|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
 
 
 ### `sorted` with `cmp_func`
@@ -112,7 +102,17 @@ def cmp_student(a,b):
 rows_sorted = sorted(rows_dict, key=cmp_func(cmp_student), reverse=True)
 ```
 
-
+### For reference: `superfast` methodology with list of dicts:
+```
+def key_grade(student):
+    grade = student['grade']
+    return grade is None, grade
+def key_attend(student):
+    attend = student['attend']
+    return attend is None, attend
+students_sorted = sorted(students, key=key_attend)
+students_sorted.sort(key=key_grade, reverse=True)
+```
 
 ### Object Examples
 For data:
@@ -138,16 +138,6 @@ rows_obj = [
 
 ### `multisort`
 (Same syntax as with 'dict' example)
-
-
-### `sorted` with `reversor`
-Sort rows_obj by _grade_, descending, then _attend_ and call upper() for _grade_:
-```
-rows_sorted = sorted(rows_obj, key=lambda o: (
-             reversor(None if o.grade is None else o.grade.upper())
-            ,o.attend)
-))
-```
 
 
 ### `sorted` with `cmp_func`
@@ -184,22 +174,11 @@ Sort rows_tuple by _grade_, descending, then _attend_, ascending and put None fi
 ```
 from multisort import multisort
 rows_sorted = multisort(rows_tuple, [
-         (COL_GRADE, {'reverse': False, 'none_first': True})
-        ,COL_ATTEND
+        mscol(COL_GRADE, reverse=False, default='0'),
+        (COL_ATTEND)
 ])
 
 ```
-
-
-### `sorted` with `reversor`
-Sort rows_tuple by _grade_, descending, then _attend_ and call upper() for _grade_:
-```
-rows_sorted = sorted(rows_tuple, key=lambda o: (
-             reversor(None if o[COL_GRADE] is None else o[COL_GRADE].upper())
-            ,o[COL_ATTEND])
-))
-```
-
 
 ### `sorted` with `cmp_func`
 Sort rows_tuple by _grade_, descending, then _attend_ and call upper() for _grade_:

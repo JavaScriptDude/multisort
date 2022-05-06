@@ -1,1 +1,1 @@
-from .multisort import multisort, cmp_func, reversor
+from .multisort import multisort, mscol, cmp_func, reversor

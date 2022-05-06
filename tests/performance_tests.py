@@ -2,7 +2,7 @@ import asyncio
 import pandas
 from random import randint
 from operator import itemgetter
-from multisort import multisort, cmp_func, reversor
+from multisort import multisort, mscol, cmp_func, reversor
 import test_util as util
 pc = util.pc
 
@@ -14,7 +14,7 @@ students = [
     ,{'idx': 4, 'name': 'jim' , 'grade': 'F', 'attend': 55}
     ,{'idx': 5, 'name': 'joe' , 'grade': None, 'attend': 55}
 ]
-ITERATIONS = 5
+ITERATIONS = 10
 EXTRA_ROW = 1000
 
 def main():
@@ -70,27 +70,24 @@ async def run_cmp_func(rows):
     
     return ('cmp_func', sw.elapsed(prec=7))
 
-
-
 async def run_multisort(rows):
     sw = util.StopWatch()
     for i in range(0,ITERATIONS):
-        rows_sorted = multisort(rows, spec=(
-                ('grade', {'reverse': True, 'clean': lambda v: None if v is None else v.lower()})
-               ,('attend', {'reverse': True})
-        ), reverse=True)
+        def clean_grade(v): return v.lower()
+        rows_sorted = multisort(rows, [
+                mscol('grade', reverse=True, clean=clean_grade),
+                mscol('attend', reverse=True),
+        ], reverse=True)
     return ('multisort w/ clean', sw.elapsed(prec=7))
-
 
 async def run_multisort_noclean(rows):
     sw = util.StopWatch()
     for i in range(0,ITERATIONS):
-        rows_sorted = multisort(rows, spec=(
-                ('grade', {'reverse': True})
-               ,('attend', {'reverse': True})
-        ), reverse=True)
+        rows_sorted = multisort(rows, [
+                mscol('grade', reverse=True),
+                mscol('attend', reverse=True),
+        ], reverse=True)
     return ('multisort noclean', sw.elapsed(prec=7))
-
 
 async def run_reversor(rows):
     sw = util.StopWatch()
@@ -119,7 +116,8 @@ async def superfast(students):
         grade = student['grade']
         return grade is None, grade
     def key_attend(student):
-        return student['attend']
+        attend = student['attend']
+        return attend is None, attend
     students_sorted = sorted(students, key=key_attend)
     students_sorted.sort(key=key_grade, reverse=True)
 

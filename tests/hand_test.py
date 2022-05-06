@@ -1,16 +1,17 @@
 import sys
-from multisort import multisort, cmp_func, reversor
+from multisort import multisort, mscol, cmp_func, reversor
 import test_util as util
 pc = util.pc
 
 def main():
-    # test_multisort_dict_single()
-    # test_multisort_obj_single()
-    # test_multisort_tuple_single()
+
+    test_multisort_dict_single()
+    test_multisort_obj_single()
+    test_multisort_tuple_single()
 
     test_multisort_dict_multi()
-    # test_multisort_obj_multi()
-    # test_multisort_tuple_multi()
+    test_multisort_obj_multi()
+    test_multisort_tuple_multi()
 
 
 students_dict = [
@@ -69,19 +70,25 @@ def test_multisort_tuple_single():
 
 def test_multisort_dict_multi():
     _sorted = multisort(students_dict, [
-             ('grade', {'reverse': True, 'clean': lambda s: None if s is None else s.upper(), 'default': '0', 'required': True}),
+             mscol('grade', reverse=True, clean=lambda s: None if s is None else s.upper(), default='0', required=True),
             # ('attend', {'reverse': False}),
     ], reverse=False)
     _print_stud(_sorted)
 
 
 def test_multisort_obj_multi():
-    _sorted = multisort(students_obj, [('grade', {'reverse': True}), 'attend'], reverse=False)
+    _sorted = multisort(students_obj, [
+            mscol('grade', reverse=True), 
+            mscol('attend')
+    ], reverse=False)
     _print_stud(_sorted)
 
 
 def test_multisort_tuple_multi():
-    _sorted = multisort(student_tuple, [(COL_GRADE, {'reverse': True}), COL_ATTEND], reverse=False)
+    _sorted = multisort(student_tuple, [
+            mscol(COL_GRADE, reverse=True), 
+            mscol(COL_ATTEND)
+    ], reverse=False)
     _print_stud(_sorted)
 
 

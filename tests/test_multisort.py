@@ -1,6 +1,6 @@
 import sys
 import unittest
-from multisort import multisort
+from multisort import multisort, mscol
 import test_util as util
 pc = util.pc
 
@@ -23,14 +23,14 @@ def clean_grade(v):
 
 
 MSORTED_TESTS=[
-    ( (2,0,5,1,3,4), [(COL_GRADE, {'reverse': False, 'clean': clean_grade}) , (COL_ATTEND, {'reverse': False})]),
-    ( (0,2,1,5,3,4), [(COL_GRADE, {'reverse': False, 'clean': clean_grade}) , (COL_ATTEND, {'reverse': True})]),
-    ( (0,2,1,5,3,4), [(COL_GRADE, {'reverse': False, 'clean': clean_grade}) , (COL_ATTEND, {'reverse': True})]),
-    ( (4,3,1,5,0,2), [(COL_GRADE, {'reverse': True , 'clean': clean_grade}) , (COL_ATTEND, {'reverse': True})]),
-    ( (4,3,5,1,2,0), [(COL_GRADE, {'reverse': True , 'clean': clean_grade}) , (COL_ATTEND, {'reverse': False})]),
+    ( (2,0,5,1,3,4), [mscol(COL_GRADE, reverse=False, clean=clean_grade) , mscol(COL_ATTEND, reverse=False)]),
+    ( (0,2,1,5,3,4), [mscol(COL_GRADE, reverse=False, clean=clean_grade) , mscol(COL_ATTEND, reverse=True)]),
+    ( (0,2,1,5,3,4), [mscol(COL_GRADE, reverse=False, clean=clean_grade) , mscol(COL_ATTEND, reverse=True)]),
+    ( (4,3,1,5,0,2), [mscol(COL_GRADE, reverse=True , clean=clean_grade) , mscol(COL_ATTEND, reverse=True)]),
+    ( (4,3,5,1,2,0), [mscol(COL_GRADE, reverse=True , clean=clean_grade) , mscol(COL_ATTEND, reverse=False)]),
     ( (2,1,5,3,0,4), COL_GRADE),
     ( (2,1,5,3,0,4), [COL_GRADE]),
-    ( (2,5,1,3,0,4), [COL_GRADE, COL_NAME]),
+    ( (4,0,3,5,1,2), [[COL_GRADE, True], COL_NAME]),
 ]
 
 
@@ -158,16 +158,10 @@ class ObjectTests(MultiSortBase):
 
 def norm_spec_item(spec_c):
     if isinstance(spec_c, (int, str)):
-        return (spec_c, None, None)
+        return (spec_c, False, None, None, True)
     else:
-        assert isinstance(spec_c, tuple) and len(spec_c) in (1,2),\
-            f"Invalid spec. Must have 1 or 2 params per record. Got: {spec_c}"
-        if len(spec_c) == 1:
-            return (spec_c[0], None, None)
-        elif len(spec_c) == 2:
-            s_opts = spec_c[1]
-            assert not s_opts is None and isinstance(s_opts, dict), f"Invalid Spec. Second value must be a dict. Got {util.getClassName(s_opts)}"
-            return (spec_c[0], s_opts.get('reverse', False), s_opts.get('clean', None))
+        if len(spec_c) < 5: return mscol(*spec_c)
+        return spec_c
 
 
 def dump_sort(stest_no, spec, rows, rows_as, row_as, expected, reverse):
@@ -179,13 +173,13 @@ def dump_sort(stest_no, spec, rows, rows_as, row_as, expected, reverse):
         sb.a(spec).a(" (a)")
     else:
         for i, spec_c in enumerate(spec):
-            (key, desc, clean) = norm_spec_item(spec_c)
+            (key, col_reverse, clean, default, required) = norm_spec_item(spec_c)
             if i > 0: sb.a(", ")
             if indexable:
                 sb.a(STUDENT_COLS[key])
             else:
                 sb.a(key)
-            sb.a(' (d)' if desc else ' (a)')
+            sb.a(' (d)' if col_reverse else ' (a)')
 
     if reverse: sb.a(' (reversed)')
 

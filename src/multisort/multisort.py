@@ -14,32 +14,32 @@ cmp_func = cmp_to_key
 # .: multisort :.
 # spec is a list one of the following
 #    <key>
-#    (<key>,)
-#    (<key>, <opts>)
-# where:
-#  <key> Property, Key or Index for 'column' in row
-#  <opts> dict. Options:
-#       reverse: opt - reversed sort (defaults to False)
-#       clean: opt - callback to clean / alter data in 'field'
-def multisort(rows, spec, reverse:bool=False):
-    key=clean=rows_sorted=default=None
-    col_reverse=False
-    required=True
-    for s_c in reversed([spec] if isinstance(spec, (int, str)) else spec):
-        if isinstance(s_c, (int, str)):
-            key = s_c
-        else:
-            if len(s_c) == 1:
-                key = s_c[0]
-            elif len(s_c) == 2:
-                key = s_c[0]
-                s_opts = s_c[1]
-                assert not s_opts is None and isinstance(s_opts, dict), f"Invalid Spec. Second value must be a dict. Got {getClassName(s_opts)}"
-                col_reverse = s_opts.get('reverse', False)
-                clean = s_opts.get('clean', None)
-                default = s_opts.get('default', None)
-                required = s_opts.get('required', True)
+#    spec
+# spec options:
+#   key Property, Key or Index for 'column' in row
+#   reverse: opt - reversed sort (defaults to False)
+#   clean: opt - callback to clean / alter data in 'field' 
+#   default: Value to default if None is found or required = False
+#   required: Will not fail if key not found
+#   Use mscol helper to ease passing of variables or just pass lists of args:
+#     spec=mscol('colname1', reverse=True), mscol('colname2', reverse=True)]
+#       -or-
+#     spec=[('colname1', True),('colname2',True)]
 
+def mscol(key, reverse=False, clean=None, default=None, required=True):
+    return (key, reverse, clean, default, required)
+
+def multisort(rows, spec, reverse:bool=False):
+    rows_sorted=None
+    if isinstance(spec, (int, str)): spec = [mscol(spec)]
+    for spec_c in reversed(spec):
+        spec_c_t = type(spec_c)
+        if spec_c_t in(int, str):
+            (key, col_reverse, clean, default, required) = (spec_c, False, None, None, True)
+        else:
+            assert spec_c_t in (list, tuple), f"Invalid spec. Got: {spec_c_t.__name__}. See docs"
+            if len(spec_c) < 5: spec_c = mscol(*spec_c)
+            (key, col_reverse, clean, default, required) = spec_c
         def _sort_column(row): # Throws MSIndexError, MSKeyError
             ex1=None
             try:
@@ -94,7 +94,6 @@ def multisort(rows, spec, reverse:bool=False):
 
 
     return reversed(rows_sorted) if reverse else rows_sorted
-        
 
 class MultiSortBaseExc(Exception):
     def __init__(self, msg, row, cause):
