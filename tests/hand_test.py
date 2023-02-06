@@ -8,8 +8,8 @@ def main():
     test_multisort_dict_single()
     test_multisort_obj_single()
     test_multisort_tuple_single()
-
     test_multisort_dict_multi()
+    test_multisort_dict_multi_no_mscol()
     test_multisort_obj_multi()
     test_multisort_tuple_multi()
 
@@ -55,25 +55,33 @@ student_tuple = [
 
 def test_multisort_dict_single():
     _sorted = multisort(students_dict, 'grade', reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
 
 
 def test_multisort_obj_single():
     _sorted = multisort(students_obj, 'attend', reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
 
 
 def test_multisort_tuple_single():
     _sorted = multisort(student_tuple, COL_ATTEND, reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
 
 
 def test_multisort_dict_multi():
     _sorted = multisort(students_dict, [
-             mscol('grade', reverse=True, clean=lambda s: None if s is None else s.upper(), default='0', required=True),
-            # ('attend', {'reverse': False}),
+            mscol('grade', reverse=True, clean=lambda s: None if s is None else s.upper(), default='0', required=True),
+            mscol('attend', reverse=False),
     ], reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
+
+
+def test_multisort_dict_multi_no_mscol():
+    _sorted = multisort(students_dict, [
+            ('grade', True, lambda s: None if s is None else s.upper(), '0', True),
+            ('attend', False),
+    ], reverse=False)
+    _print_res(_sorted)
 
 
 def test_multisort_obj_multi():
@@ -81,7 +89,7 @@ def test_multisort_obj_multi():
             mscol('grade', reverse=True), 
             mscol('attend')
     ], reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
 
 
 def test_multisort_tuple_multi():
@@ -89,10 +97,10 @@ def test_multisort_tuple_multi():
             mscol(COL_GRADE, reverse=True), 
             mscol(COL_ATTEND)
     ], reverse=False)
-    _print_stud(_sorted)
+    _print_res(_sorted)
 
 
-def _print_stud(rows):
+def _print_res(rows):
     print(f"\n{util.getFuncName(2)}() Results:")
     for row in rows:
         print(util.pre(str(row)))

@@ -210,8 +210,6 @@ def dump_sort(stest_no, spec, rows, rows_as, row_as, expected, reverse):
     return sb.ts()
 
 
-
-
     
 def _get_rows_in(rows_list=False, rows_tuple=False, row_as_dict=False, row_as_obj=False, row_as_list=False, row_as_tuple=False):
     if row_as_dict:

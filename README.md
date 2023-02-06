@@ -104,8 +104,9 @@ option|position|dtype|description
 `key`|0|int or str|Key to access data. int for tuple or list
 `reverse`|1|bool|Reverse sort of column
 `clean`|2|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
-`required`|3|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
-`default`|4|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
+`default`|3|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
+`required`|4|bool|Default True. If False, will substitute None or default if key not found (not applicable for list or tuple rows)
+
 
 \* `spec` entries can be passed as:
 &nbsp;&nbsp;&nbsp;&nbsp;type|description

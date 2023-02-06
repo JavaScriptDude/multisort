@@ -46,6 +46,7 @@ async def run_tests():
         run_pandas(students[:]),
         superfast(students[:]),
         superfast_clean(students[:]),
+        superfast_lambda(students[:]),
     ]
     res = await asyncio.gather(*coroutines, return_exceptions=True)
 
@@ -122,6 +123,17 @@ async def superfast(students):
     students_sorted.sort(key=key_grade, reverse=True)
 
     return ('superfast', sw.elapsed(prec=7))
+
+
+async def superfast_lambda(students):
+    sw = util.StopWatch()
+    students_sorted = sorted(students, key=lambda r: (r['grade'] is None, r['grade'],) )
+    students_sorted.sort(key=lambda r: (r['attend'] is None, r['attend'],), reverse=True)
+
+    return ('superfast_lambda', sw.elapsed(prec=7))
+
+
+
 
 
 async def superfast_clean(students):
