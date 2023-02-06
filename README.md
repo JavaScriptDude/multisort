@@ -36,12 +36,12 @@ cmp_func|Multi column sorting in the model `java.util.Comparator`|Reasonable spe
 superfast|NoneType safe sample implementation of multi column sorting as mentioned in [example from python docs](https://docs.python.org/3/howto/sorting.html#sort-stability-and-complex-sorts)|Fastest by orders of magnitude but a bit more complex to write.
 
 
-
+<br>
 
 ### Dictionary Examples
 For data:
 ```
-rows_dict = [
+rows_before = [
      {'idx': 0, 'name': 'joh', 'grade': 'C', 'attend': 100}
     ,{'idx': 1, 'name': 'jan', 'grade': 'a', 'attend': 80}
     ,{'idx': 2, 'name': 'dav', 'grade': 'B', 'attend': 85}
@@ -52,24 +52,44 @@ rows_dict = [
 ```
 
 ### `multisort`
-Sort rows_dict by _grade_, descending, then _attend_, ascending and put None first in results:
+Sort rows_before by _grade_, descending, then _attend_, ascending and put None first in results:
 ```
-from multisort import multisort
-rows_sorted = multisort(rows_dict, [
-        ('grade', reverse=False),
-        ('attend')
+from multisort import multisort, mscol
+rows_sorted = multisort(rows_before, [
+        mscol('grade', reverse=False),
+        'attend'
 ])
+```
+
+-or- without `mscol`
 
 ```
-Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade_:
+from multisort import multisort
+rows_sorted = multisort(rows_before, [
+        ('grade', False),
+        'attend'
+])
+```
+
+Sort rows_before by _grade_, descending, then _attend_ and call upper() for _grade_:
+```
+from multisort import multisort, mscol
+rows_sorted = multisort(rows_before, [
+        mscol('grade', reverse=False, clean=lambda s: None if s is None else s.upper()),
+        'attend'
+])
+```
+
+-or- without `mscol`
 ```
 from multisort import multisort
-rows_sorted = multisort(rows_dict, [
-        mscol('grade', 'reverse'=False, clean=lambda s: None if s is None else s.upper()),
-        ('attend')
+rows_sorted = multisort(rows_before, [
+        ('grade', False, lambda s: None if s is None else s.upper()),
+        'attend'
 ])
-
 ```
+
+
 `multisort` parameters:
 option|dtype|description
 ---|---|---
@@ -77,18 +97,29 @@ option|dtype|description
 `spec`|str, int, list|Sort specification. Can be as simple as a column key / index or `mscol`
 `reverse`|bool|Reverse order of final sort (defalt = False)
 
-`multisort` spec options:
-option|dtype|description
----|---|---
-`key`|int or str|Key to access data. int for tuple or list
-`reverse`|bool|Reverse sort of column
-`clean`|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
-`required`|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
-`default`|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
+
+`spec` entry options:
+option|position|dtype|description
+---|---|---|---
+`key`|0|int or str|Key to access data. int for tuple or list
+`reverse`|1|bool|Reverse sort of column
+`clean`|2|func|Function / lambda to clean the value. These calls can cause a significant slowdown.
+`required`|3|bool|Default True. If false, will substitute None or default if key not found (not applicable for list or tuple rows)
+`default`|4|any|Value to substitute if required==False and key does not exist or None is found. Can be used to achive similar functionality to pandas `na_position`
+
+\* `spec` entries can be passed as:
+&nbsp;&nbsp;&nbsp;&nbsp;type|description
+---|---
+&nbsp;&nbsp;&nbsp;&nbsp;`String`|Column name
+&nbsp;&nbsp;&nbsp;&nbsp;`tuple`|Tuple of 1 or more `spec` options in their order as listed (see `position`)
+&nbsp;&nbsp;&nbsp;&nbsp;`mscol()`|Importable helper to aid in readability. Suggested for three or more of the options.
+
+
+<br><br>
 
 
 ### `sorted` with `cmp_func`
-Sort rows_dict by _grade_, descending, then _attend_ and call upper() for _grade_:
+Sort rows_before by _grade_, descending, then _attend_ and call upper() for _grade_:
 ```
 def cmp_student(a,b):
     k='grade'; va=a[k]; vb=b[k]
@@ -99,8 +130,10 @@ def cmp_student(a,b):
     k='attend'; va=a[k]; vb=b[k]; 
     if va != vb: return -1 if va < vb else 1
     return 0
-rows_sorted = sorted(rows_dict, key=cmp_func(cmp_student), reverse=True)
+rows_sorted = sorted(rows_before, key=cmp_func(cmp_student), reverse=True)
 ```
+
+<br>
 
 ### For reference: `superfast` methodology with list of dicts:
 ```
@@ -114,6 +147,8 @@ students_sorted = sorted(students, key=key_attend)
 students_sorted.sort(key=key_grade, reverse=True)
 ```
 
+<br>
+
 ### Object Examples
 For data:
 ```
@@ -126,7 +161,7 @@ class Student():
     def __str__(self): return f"name: {self.name}, grade: {self.grade}, attend: {self.attend}"
     def __repr__(self): return self.__str__()
 
-rows_obj = [
+rows_before = [
      Student(0, 'joh', 'C', 100)
     ,Student(1, 'jan', 'a', 80)
     ,Student(2, 'dav', 'B', 85)
@@ -135,13 +170,15 @@ rows_obj = [
     ,Student(5, 'joe', None, 55)
 ]
 ```
+<br>
 
 ### `multisort`
-(Same syntax as with 'dict' example)
+(Same syntax as with Dictionary example above)
 
+<br>
 
 ### `sorted` with `cmp_func`
-Sort rows_obj by _grade_, descending, then _attend_ and call upper() for _grade_:
+Sort rows_before by _grade_, descending, then _attend_ and call upper() for _grade_:
 ```
 def cmp_student(a,b):
     if a.grade != b.grade: 
@@ -151,14 +188,14 @@ def cmp_student(a,b):
     if a.attend != b.attend: 
         return -1 if a.attend < b.attend else 1
     return 0
-rows_sorted = sorted(rows_obj, key=cmp_func(cmp_student), reverse=True)
+rows_sorted = sorted(rows_before, key=cmp_func(cmp_student), reverse=True)
 ```
 
 
 ### List / Tuple Examples
 For data:
 ```
-rows_tuple = [
+rows_before = [
      (0, 'joh', 'a'  , 100)
     ,(1, 'joe', 'B'  , 80)
     ,(2, 'dav', 'A'  , 85)
@@ -169,19 +206,15 @@ rows_tuple = [
 (COL_IDX, COL_NAME, COL_GRADE, COL_ATTEND) = range(0,4)
 ```
 
-### `multisort`
-Sort rows_tuple by _grade_, descending, then _attend_, ascending and put None first in results:
-```
-from multisort import multisort
-rows_sorted = multisort(rows_tuple, [
-        mscol(COL_GRADE, reverse=False, default='0'),
-        (COL_ATTEND)
-])
+<br>
 
-```
+### `multisort`
+(Same syntax as with Dictionary example above)
+
+<br>
 
 ### `sorted` with `cmp_func`
-Sort rows_tuple by _grade_, descending, then _attend_ and call upper() for _grade_:
+Sort rows_before by _grade_, descending, then _attend_ and call upper() for _grade_:
 ```
 def cmp_student(a,b):
     k=COL_GRADE; va=a[k]; vb=b[k]
@@ -193,10 +226,13 @@ def cmp_student(a,b):
     if va != vb: 
         return -1 if va < vb else 1
     return 0
-rows_sorted = sorted(rows_tuple, key=cmp_func(cmp_student), reverse=True)
+rows_sorted = sorted(rows_before, key=cmp_func(cmp_student), reverse=True)
 ```
 
-### Tests / Samples
+<br><br>
+
+
+### `multisort` library Test / Sample files (/tests)
 Name|Descr|Other
 ---|---|---
 tests/test_multisort.py|multisort unit tests|- 
