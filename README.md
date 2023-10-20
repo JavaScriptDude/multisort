@@ -232,6 +232,29 @@ rows_sorted = sorted(rows_before, key=cmp_func(cmp_student), reverse=True)
 
 <br><br>
 
+### Basic sorting
+`multisort` can be used as a basic non-destructive sorter of lists where a traditional sort does so destructively:
+```
+_orig = [1, 4, 3, 6, 5]
+_orig.sort(reverse=True)
+```
+This will sort `_orig` in-place
+
+In builtin python, to do a non-destructive sort it takes two lines:
+```
+_orig = [1, 4, 3, 6, 5]
+_clone = [:]
+_clone.sort(reverse=True)
+```
+
+With Multisort its just one line:
+```
+_orig = [1, 4, 3, 6, 5]
+_sorted = multisort(_orig, reverse=True)
+```
+Where `_orig` is left unchanged
+
+<br>
 
 ### `multisort` library Test / Sample files (/tests)
 Name|Descr|Other
